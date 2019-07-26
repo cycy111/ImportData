@@ -1,0 +1,17 @@
+# git ignore file
+/backup/
+Nuget/
+bin/
+obj/
+.vscode/
+*.[pdb]
+*.suo
+*.user
+*.pdb
+*.tmp
+
+#/Tools/*
+*.DotSettings
+.vs
+applicationhost.config
+packages/
