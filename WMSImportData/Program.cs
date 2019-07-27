@@ -42,8 +42,8 @@ namespace WMSImportData
 
             try
             {
-                //System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-               
+                System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
                 if (!string.IsNullOrEmpty(config["ApiConfig:OneColumnFile"]))
                 {
                     ReadInData.GetTData(config["ApiConfig:OneColumnFile"], false);
@@ -288,7 +288,7 @@ namespace WMSImportData
                         if (dt.Table.Columns.Contains("储位编号"))
                             w_Temp_Storage.DocEntry = dt["储位编号"].ToString();
                         if (dt.Table.Columns.Contains("储位名称"))
-                            w_Temp_Storage.DocEntry = dt["储位名称"].ToString();
+                            w_Temp_Storage.StName = dt["储位名称"].ToString();
                         if (dt.Table.Columns.Contains("所属仓库"))
                             w_Temp_Storage.WhCode = dt["所属仓库"].ToString();
                         if (dt.Table.Columns.Contains("权限部门"))
