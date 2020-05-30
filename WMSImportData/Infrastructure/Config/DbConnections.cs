@@ -14,6 +14,10 @@ namespace WmsReport.Infrastructure.Config
         /// WMSReport数据库
         /// </summary>
         public string WMSReport { get; set; }
+        /// <summary>
+        /// tms用户数据库连接
+        /// </summary>
+        public string Tus { get; set; }
 
         /// <summary>
         /// 数据库集合

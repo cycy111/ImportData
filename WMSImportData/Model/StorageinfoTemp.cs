@@ -583,6 +583,62 @@ namespace WMSImportData.Model
             get { return _orderPactCode; }
             set { _orderPactCode = value; }
         }
+        /// <summary>
+        /// City
+        /// </summary>		
+        private string _city;
+        public string City
+        {
+            get { return _city; }
+            set { _city = value; }
+        }
+        /// <summary>
+		/// xlenght
+        /// </summary>		
+		private decimal _xlenght;
+        public decimal xlenght
+        {
+            get { return _xlenght; }
+            set { _xlenght = value; }
+        }
+        /// <summary>
+        /// xwidth
+        /// </summary>		
+        private decimal _xwidth;
+        public decimal xwidth
+        {
+            get { return _xwidth; }
+            set { _xwidth = value; }
+        }
+        /// <summary>
+        /// xheight
+        /// </summary>		
+        private decimal _xheight;
+        public decimal xheight
+        {
+            get { return _xheight; }
+            set { _xheight = value; }
+        }
+
+        /// <summary>
+        /// ComboNo
+        /// </summary>		
+        private string _combono;
+        public string ComboNo
+        {
+            get { return _combono; }
+            set { _combono = value; }
+        }
+
+        /// <summary>
+        /// ComboName
+        /// </summary>		
+        private string _comboname;
+        public string ComboName
+        {
+            get { return _comboname; }
+            set { _comboname = value; }
+        }
     }
 
 }

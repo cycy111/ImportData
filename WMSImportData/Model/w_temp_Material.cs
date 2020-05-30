@@ -152,5 +152,23 @@ namespace WMSImportData.Model
             set { _price = value; }
         }
 
+        /// <summary>
+		/// ComboNo
+        /// </summary>		
+		private string _combono;
+        public string ComboNo
+        {
+            get { return _combono; }
+            set { _combono = value; }
+        }
+        /// <summary>
+        /// ComboName
+        /// </summary>		
+        private string _comboname;
+        public string ComboName
+        {
+            get { return _comboname; }
+            set { _comboname = value; }
+        }
     }
 }

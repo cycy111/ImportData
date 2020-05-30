@@ -3,7 +3,6 @@ D:\项目\ExcelReader\WMSImportData\bin\Debug\netcoreapp2.2\WMSImportData.runtim
 D:\项目\ExcelReader\WMSImportData\bin\Debug\netcoreapp2.2\WMSImportData.runtimeconfig.dev.json
 D:\项目\ExcelReader\WMSImportData\bin\Debug\netcoreapp2.2\WMSImportData.dll
 D:\项目\ExcelReader\WMSImportData\obj\Debug\netcoreapp2.2\WMSImportData.csprojAssemblyReference.cache
-D:\项目\ExcelReader\WMSImportData\obj\Debug\netcoreapp2.2\WMSImportData.csproj.CoreCompileInputs.cache
 D:\项目\ExcelReader\WMSImportData\obj\Debug\netcoreapp2.2\WMSImportData.AssemblyInfoInputs.cache
 D:\项目\ExcelReader\WMSImportData\obj\Debug\netcoreapp2.2\WMSImportData.AssemblyInfo.cs
 D:\项目\ExcelReader\WMSImportData\bin\Debug\netcoreapp2.2\WMSImportData.pdb

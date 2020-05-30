@@ -18,6 +18,7 @@ using WMSImportData.Config;
 using System.Collections.Generic;
 using WMSImportData.Model;
 using System.Linq;
+using AccountCenter.Api.Infrastructure.WmsEncryption;
 
 namespace WMSImportData
 {
@@ -38,7 +39,7 @@ namespace WMSImportData
 
             var service = _serviceProvider.GetService<IWmsDbConnection>();
 
-            importData = new ImportData(service);
+            importData = new ImportData(service,config);
 
             try
             {
@@ -98,6 +99,7 @@ namespace WMSImportData
             collection.AddOptions();
             collection.Configure<ApiConfig>(configuration.GetSection(nameof(ApiConfig)));
             collection.Configure<DbConnections>(configuration.GetSection(nameof(DbConnections)));
+            collection.Configure<IConfiguration>(configuration);
             _serviceProvider = collection.BuildServiceProvider();
 
             ContainerBuilder containerBuilder = new ContainerBuilder();
@@ -123,82 +125,135 @@ namespace WMSImportData
             {
                 int importCount = 0;
                 DataTableCollection dataTableCollection = ExcelHelper.GetData(path, isFirstRowAsColumnNames);
-                if (dataTableCollection.Contains("库存导入"))
+                if ((dataTableCollection.Contains("库存")| dataTableCollection.Contains("库存导入")))
                 {
+                    IEnumerable<DataRow> storageinforows = null;
                     Console.WriteLine("开始导入库存...");
+                    if(dataTableCollection.Contains("库存"))
+                        storageinforows = from DataRow row in dataTableCollection["库存"].Rows select row;
 
-                    IEnumerable<DataRow> storageinforows = from DataRow row in dataTableCollection["库存导入"].Rows select row;
-                    List<StorageinfoTemp> storageinfos = new List<StorageinfoTemp>();
-                    foreach (var dt in storageinforows)
+                    if (dataTableCollection.Contains("库存导入"))
+                        storageinforows = from DataRow row in dataTableCollection["库存导入"].Rows select row;
+
+                    if (storageinforows.Count() > 0)
                     {
-                        StorageinfoTemp storageinfoTemp = new StorageinfoTemp();
+                        List<StorageinfoTemp> storageinfos = new List<StorageinfoTemp>();
+                        foreach (var dt in storageinforows)
+                        {
+                            StorageinfoTemp storageinfoTemp = new StorageinfoTemp();
 
-                        if (dt.Table.Columns.Contains("单据类型"))
-                            storageinfoTemp.OrderType = dt["单据类型"].ToString();
-                        if (dt.Table.Columns.Contains("物资编号"))
-                            storageinfoTemp.ProductCode = dt["物资编号"].ToString();
-                        if (dt.Table.Columns.Contains("采购单号"))
-                            storageinfoTemp.CGDID = dt["采购单号"].ToString();
-                        if (dt.Table.Columns.Contains("来源单号"))
-                            storageinfoTemp.DocEntry = dt["来源单号"].ToString();
-                        if (dt.Table.Columns.Contains("权限部门"))
-                            storageinfoTemp.DeptCode = dt["权限部门"].ToString();
-                        if (dt.Table.Columns.Contains("储位"))
-                            storageinfoTemp.Location = dt["储位"].ToString();
-                        if (dt.Table.Columns.Contains("项目编码"))
-                            storageinfoTemp.ProjectCode = dt["项目编码"].ToString();
-                        if (dt.Table.Columns.Contains("供应商编号"))
-                            storageinfoTemp.Supplier = dt["供应商编号"].ToString();
-                        if (dt.Table.Columns.Contains("入库组织"))
-                            storageinfoTemp.InOrganize = dt["入库组织"].ToString();
-                        if (dt.Table.Columns.Contains("单位"))
-                            storageinfoTemp.ProductUnit = dt["单位"].ToString();
-                        if (dt.Table.Columns.Contains("物资类别"))
-                            storageinfoTemp.ProductType = dt["物资类别"].ToString();
-                        if (dt.Table.Columns.Contains("单价"))
-                            storageinfoTemp.Price = dt["单价"].ToString();
-                        if (dt.Table.Columns.Contains("物资属性"))
-                            storageinfoTemp.ProProperty = dt["物资属性"].ToString();
-                        if (dt.Table.Columns.Contains("箱号"))
-                            storageinfoTemp.PackCode = dt["箱号"].ToString();
-                        if (dt.Table.Columns.Contains("装箱单号"))
-                            storageinfoTemp.PackingCode = dt["装箱单号"].ToString();
-                        if (dt.Table.Columns.Contains("追溯时间"))
-                            storageinfoTemp.ZSDate = dt["追溯时间"].ToString();
-                        if (dt.Table.Columns.Contains("收货时间"))
-                            storageinfoTemp.InSDate = dt["收货时间"].ToString();
-                        if (dt.Table.Columns.Contains("项目负责人"))
-                            storageinfoTemp.ProjectUser = dt["项目负责人"].ToString();
-                        if (dt.Table.Columns.Contains("ERP批次"))
-                            storageinfoTemp.ERPNo = dt["ERP批次"].ToString();
-                        if (dt.Table.Columns.Contains("物资批次"))
-                            storageinfoTemp.ProSeqno = dt["物资批次"].ToString();
-                        if (dt.Table.Columns.Contains("关联单号"))
-                            storageinfoTemp.PurchaseCode = dt["关联单号"].ToString();
-                        if (dt.Table.Columns.Contains("规格"))
-                            storageinfoTemp.SpcModel = dt["规格"].ToString();
-                        if (dt.Table.Columns.Contains("标准体积"))
-                            storageinfoTemp.StandV = dt["标准体积"].ToString();
-                        if (dt.Table.Columns.Contains("标准重量"))
-                            storageinfoTemp.StandW = dt["标准重量"].ToString();
-                        if (dt.Table.Columns.Contains("对应台账"))
-                            storageinfoTemp.Taizhang = dt["对应台账"].ToString();
-                        if (dt.Table.Columns.Contains("所属部门"))
-                            storageinfoTemp.DmadDept = dt["所属部门"].ToString();
-                        if (dt.Table.Columns.Contains("MIS单号"))
-                            storageinfoTemp.MISOrderID = dt["MIS单号"].ToString();
-                        if (dt.Table.Columns.Contains("备注"))
-                            storageinfoTemp.Remark1 = dt["备注"].ToString();
-                        if (dt.Table.Columns.Contains("可用库存"))
-                            storageinfoTemp.Qty = dt["可用库存"].ToString();
-                        if (dt.Table.Columns.Contains("厂家合同号"))
-                            storageinfoTemp.FacPactCode = dt["厂家合同号"].ToString();
-                        if (dt.Table.Columns.Contains("订单合同号"))
-                            storageinfoTemp.OrderPactCode = dt["订单合同号"].ToString();
-                        storageinfos.Add(storageinfoTemp);
-                    }
-                    importCount = importData.ImportStoTb(config["ApiConfig:dept"], storageinfos);
-                    Console.WriteLine("库存成功导入" + importCount.ToString() + "条记录!");
+                            if (dt.Table.Columns.Contains("单据类型"))
+                                storageinfoTemp.OrderType = dt["单据类型"].ToString();
+                            if (dt.Table.Columns.Contains("物资编号"))
+                                storageinfoTemp.ProductCode = dt["物资编号"].ToString();
+                            if (dt.Table.Columns.Contains("物资编码"))
+                                storageinfoTemp.ProductCode = dt["物资编码"].ToString();
+                            if (dt.Table.Columns.Contains("物资名称"))
+                                storageinfoTemp.ProductName = dt["物资名称"].ToString();
+                            if (dt.Table.Columns.Contains("采购单号"))
+                                storageinfoTemp.CGDID = dt["采购单号"].ToString();
+                            if (dt.Table.Columns.Contains("采购单行描述"))
+                                storageinfoTemp.CGDHMS = dt["采购单行描述"].ToString();
+                            if (dt.Table.Columns.Contains("采购单描述"))
+                                storageinfoTemp.CGDHMS = dt["采购单描述"].ToString();
+                            if (dt.Table.Columns.Contains("来源单号"))
+                                storageinfoTemp.DocEntry = dt["来源单号"].ToString();
+                            if (dt.Table.Columns.Contains("权限部门"))
+                                storageinfoTemp.DeptCode = dt["权限部门"].ToString();
+                            if (dt.Table.Columns.Contains("储位"))
+                                storageinfoTemp.Location = dt["储位"].ToString();
+                            if (dt.Table.Columns.Contains("仓库"))
+                                storageinfoTemp.WhCode = dt["仓库"].ToString();
+                            if (dt.Table.Columns.Contains("所属仓库"))
+                                storageinfoTemp.WhCode = dt["所属仓库"].ToString();
+                            if (dt.Table.Columns.Contains("项目编码"))
+                                storageinfoTemp.ProjectCode = dt["项目编码"].ToString();
+                            if (dt.Table.Columns.Contains("项目编号"))
+                                storageinfoTemp.ProjectCode = dt["项目编号"].ToString();
+                            if (dt.Table.Columns.Contains("项目名称"))
+                                storageinfoTemp.ProjectName = dt["项目名称"].ToString();
+                            if (dt.Table.Columns.Contains("供应商编号"))
+                                storageinfoTemp.Supplier = dt["供应商编号"].ToString();
+                            if (dt.Table.Columns.Contains("供应商编码"))
+                                storageinfoTemp.Supplier = dt["供应商编码"].ToString();
+                            if (dt.Table.Columns.Contains("供应商名称"))
+                                storageinfoTemp.SupName = dt["供应商名称"].ToString();
+                            if (dt.Table.Columns.Contains("入库组织"))
+                                storageinfoTemp.InOrganize = dt["入库组织"].ToString();
+                            if (dt.Table.Columns.Contains("单位"))
+                                storageinfoTemp.ProductUnit = dt["单位"].ToString();
+                            if (dt.Table.Columns.Contains("物资类别"))
+                                storageinfoTemp.ProductType = dt["物资类别"].ToString();
+                            if (dt.Table.Columns.Contains("单价"))
+                                storageinfoTemp.Price = dt["单价"].ToString();
+                            if (dt.Table.Columns.Contains("物资属性"))
+                                storageinfoTemp.ProProperty = dt["物资属性"].ToString();
+                            if (dt.Table.Columns.Contains("箱号"))
+                                storageinfoTemp.PackCode = dt["箱号"].ToString();
+                            if (dt.Table.Columns.Contains("装箱单号"))
+                                storageinfoTemp.PackingCode = dt["装箱单号"].ToString();
+                            if (dt.Table.Columns.Contains("追溯时间"))
+                                storageinfoTemp.ZSDate = dt["追溯时间"].ToString();
+                            if (dt.Table.Columns.Contains("收货时间"))
+                                storageinfoTemp.InSDate = dt["收货时间"].ToString();
+                            if (dt.Table.Columns.Contains("项目负责人"))
+                                storageinfoTemp.ProjectUser = dt["项目负责人"].ToString();
+                            if (dt.Table.Columns.Contains("ERP批次"))
+                                storageinfoTemp.ERPNo = dt["ERP批次"].ToString();
+                            if (dt.Table.Columns.Contains("物资批次"))
+                                storageinfoTemp.ProSeqno = dt["物资批次"].ToString();
+                            if (dt.Table.Columns.Contains("关联单号"))
+                                storageinfoTemp.PurchaseCode = dt["关联单号"].ToString();
+                            if (dt.Table.Columns.Contains("规格"))
+                                storageinfoTemp.SpcModel = dt["规格"].ToString();
+                            if (dt.Table.Columns.Contains("标准体积"))
+                                storageinfoTemp.StandV = dt["标准体积"].ToString();
+                            if (dt.Table.Columns.Contains("标准重量"))
+                                storageinfoTemp.StandW = dt["标准重量"].ToString();
+                            if (dt.Table.Columns.Contains("对应台账"))
+                                storageinfoTemp.Taizhang = dt["对应台账"].ToString();
+                            if (dt.Table.Columns.Contains("所属部门"))
+                                storageinfoTemp.DmadDept = dt["所属部门"].ToString();
+                            if (dt.Table.Columns.Contains("MIS单号"))
+                                storageinfoTemp.MISOrderID = dt["MIS单号"].ToString();
+                            if (dt.Table.Columns.Contains("备注"))
+                                storageinfoTemp.Remark1 = dt["备注"].ToString();
+                            if (dt.Table.Columns.Contains("可用库存"))
+                                storageinfoTemp.Qty = dt["可用库存"].ToString();
+                            if (dt.Table.Columns.Contains("厂家合同号"))
+                                storageinfoTemp.FacPactCode = dt["厂家合同号"].ToString();
+                            if (dt.Table.Columns.Contains("订单合同号"))
+                                storageinfoTemp.OrderPactCode = dt["订单合同号"].ToString();
+                            if (dt.Table.Columns.Contains("合同号"))
+                                storageinfoTemp.PactCode = dt["合同号"].ToString();
+                            if (dt.Table.Columns.Contains("需求人"))
+                                storageinfoTemp.DmadUser = dt["需求人"].ToString();
+                            if (dt.Table.Columns.Contains("地市"))
+                                storageinfoTemp.City = dt["地市"].ToString();
+                            if (dt.Table.Columns.Contains("套料编号"))
+                                storageinfoTemp.ComboNo = dt["套料编号"].ToString();
+                            if (dt.Table.Columns.Contains("套料编码"))
+                                storageinfoTemp.ComboNo = dt["套料编码"].ToString();
+                            if (dt.Table.Columns.Contains("套料名称"))
+                                storageinfoTemp.ComboName = dt["套料名称"].ToString();
+                            if (dt.Table.Columns.Contains("总价"))
+                                storageinfoTemp.Acount = dt["总价"].ToString();
+                            if (dt.Table.Columns.Contains("提货单位 "))
+                                storageinfoTemp.EnComName = dt["提货单位 "].ToString();
+                            if (dt.Table.Columns.Contains("单据日期"))
+                                storageinfoTemp.CreateDate = dt["单据日期"].ToString();
+                            if (dt.Table.Columns.Contains("长"))
+                                storageinfoTemp.xlenght = Convert.ToDecimal(dt["长"].ToString());
+                            if (dt.Table.Columns.Contains("宽"))
+                                storageinfoTemp.xwidth = Convert.ToDecimal(dt["宽"].ToString());
+                            if (dt.Table.Columns.Contains("高"))
+                                storageinfoTemp.xheight = Convert.ToDecimal(dt["高"].ToString());
+                            storageinfos.Add(storageinfoTemp);
+                        }
+                        importCount = importData.ImportStoTb(config["ApiConfig:dept"], storageinfos);
+                        Console.WriteLine("库存成功导入" + importCount.ToString() + "条记录!");
+                    } 
+                    
 
                 }
                 if (dataTableCollection.Contains("物资基础资料"))
@@ -207,28 +262,42 @@ namespace WMSImportData
 
                     IEnumerable<DataRow> materialRows = from DataRow row in dataTableCollection["物资基础资料"].Rows select row;
                     List<w_temp_Material> materials = new List<w_temp_Material>();
-                    foreach (var dt in materialRows)
-                    {
-                        w_temp_Material storageinfoTemp = new w_temp_Material();
 
-                        if (dt.Table.Columns.Contains("物资名称"))
-                            storageinfoTemp.MaterialName = dt["物资名称"].ToString();
-                        if (dt.Table.Columns.Contains("物资编码"))
-                            storageinfoTemp.DocEntry = dt["物资编码"].ToString();
-                        if (dt.Table.Columns.Contains("单位"))
-                            storageinfoTemp.SKU = dt["单位"].ToString();
-                        if (dt.Table.Columns.Contains("小类描述"))
-                            storageinfoTemp.TypeSmall = dt["小类描述"].ToString();
-                        if (dt.Table.Columns.Contains("中类描述"))
-                            storageinfoTemp.TypeMid = dt["中类描述"].ToString();
-                        if (dt.Table.Columns.Contains("物资大类"))
-                            storageinfoTemp.TypeBig = dt["物资大类"].ToString();
-                        if (dt.Table.Columns.Contains("供应商编码"))
-                            storageinfoTemp.Supplier = dt["供应商编码"].ToString();
-                        if (dt.Table.Columns.Contains("供应商名称"))
-                            storageinfoTemp.SupName = dt["供应商名称"].ToString();
-                        
-                        materials.Add(storageinfoTemp);
+                    if (materialRows.Count() > 0)
+                    {
+                        foreach (var dt in materialRows)
+                        {
+                            w_temp_Material storageinfoTemp = new w_temp_Material();
+
+                            if (dt.Table.Columns.Contains("物资名称"))
+                                storageinfoTemp.MaterialName = dt["物资名称"].ToString();
+                            if (dt.Table.Columns.Contains("物资编号"))
+                                storageinfoTemp.DocEntry = dt["物资编号"].ToString();
+                            if (dt.Table.Columns.Contains("物资编码"))
+                                storageinfoTemp.DocEntry = dt["物资编码"].ToString();
+                            if (dt.Table.Columns.Contains("单位"))
+                                storageinfoTemp.SKU = dt["单位"].ToString();
+                            if (dt.Table.Columns.Contains("小类描述"))
+                                storageinfoTemp.TypeSmall = dt["小类描述"].ToString();
+                            if (dt.Table.Columns.Contains("中类描述"))
+                                storageinfoTemp.TypeMid = dt["中类描述"].ToString();
+                            if (dt.Table.Columns.Contains("大类描述"))
+                                storageinfoTemp.TypeBig = dt["大类描述"].ToString();
+                            if (dt.Table.Columns.Contains("供应商编码"))
+                                storageinfoTemp.Supplier = dt["供应商编码"].ToString();
+                            if (dt.Table.Columns.Contains("供应商编号"))
+                                storageinfoTemp.Supplier = dt["供应商编号"].ToString();
+                            if (dt.Table.Columns.Contains("供应商名称"))
+                                storageinfoTemp.SupName = dt["供应商名称"].ToString();
+                            if (dt.Table.Columns.Contains("套料编码"))
+                                storageinfoTemp.ComboNo = dt["套料编码"].ToString();
+                            if (dt.Table.Columns.Contains("套料名称"))
+                                storageinfoTemp.ComboName = dt["套料名称"].ToString();
+                            if (dt.Table.Columns.Contains("权限部门"))
+                                storageinfoTemp.DeptCode = dt["权限部门"].ToString();
+                            materials.Add(storageinfoTemp);
+                        }
+
                     }
                     importCount = importData.ImportMatTb(config["ApiConfig:dept"], materials);
                     Console.WriteLine ("物资基础资料成功导入" + importCount.ToString() + "条记录!");
@@ -240,19 +309,24 @@ namespace WMSImportData
 
                     IEnumerable<DataRow> materialRows = from DataRow row in dataTableCollection["供应商基础资料"].Rows select row;
                     List<w_temp_Supplier> suppliers = new List<w_temp_Supplier>();
-                    foreach (var dt in materialRows)
+                    if (materialRows.Count() > 0)
                     {
-                        w_temp_Supplier storageinfoTemp = new w_temp_Supplier();
+                        foreach (var dt in materialRows)
+                        {
+                            w_temp_Supplier storageinfoTemp = new w_temp_Supplier();
 
-                       
-                        if (dt.Table.Columns.Contains("供应商名称"))
-                            storageinfoTemp.SupName = dt["供应商名称"].ToString();
-                        if (dt.Table.Columns.Contains("供应商编码"))
-                            storageinfoTemp.DocEntry = dt["供应商编码"].ToString();
-                        if (dt.Table.Columns.Contains("权限部门"))
-                            storageinfoTemp.DeptCode = dt["权限部门"].ToString();
 
-                        suppliers.Add(storageinfoTemp);
+                            if (dt.Table.Columns.Contains("供应商名称"))
+                                storageinfoTemp.SupName = dt["供应商名称"].ToString();
+                            if (dt.Table.Columns.Contains("供应商编号"))
+                                storageinfoTemp.DocEntry = dt["供应商编号"].ToString();
+                            if (dt.Table.Columns.Contains("供应商编码"))
+                                storageinfoTemp.DocEntry = dt["供应商编码"].ToString();
+                            if (dt.Table.Columns.Contains("权限部门"))
+                                storageinfoTemp.DeptCode = dt["权限部门"].ToString();
+
+                            suppliers.Add(storageinfoTemp);
+                        }
                     }
                     importCount = importData.ImportSupplierTb(config["ApiConfig:dept"], suppliers);
                     Console.WriteLine("供应商基础资料成功导入" + importCount.ToString() + "条记录!");
@@ -264,39 +338,47 @@ namespace WMSImportData
 
                     IEnumerable<DataRow> storageRows = from DataRow row in dataTableCollection["储位基础资料"].Rows select row;
                     List<w_temp_Storage> temp_Storages = new List<w_temp_Storage>();
-                    foreach (var dt in storageRows)
+                    if (storageRows.Count() > 0)
                     {
-                        w_temp_Storage w_Temp_Storage = new w_temp_Storage();
+                        foreach (var dt in storageRows)
+                        {
+                            w_temp_Storage w_Temp_Storage = new w_temp_Storage();
 
-                        //int totalColums = dt.Table.Columns.Count;
+                            //int totalColums = dt.Table.Columns.Count;
 
-                        //for (int i = 1; i < totalColums; i++)
-                        //{
-                        //    if (i == 1)
-                        //            w_Temp_Storage.DocEntry = dt[i].ToString();
-                        //    if (i == 2)
-                        //        w_Temp_Storage.WhCode = dt[i].ToString();
+                            //for (int i = 1; i < totalColums; i++)
+                            //{
+                            //    if (i == 1)
+                            //            w_Temp_Storage.DocEntry = dt[i].ToString();
+                            //    if (i == 2)
+                            //        w_Temp_Storage.WhCode = dt[i].ToString();
 
-                        //    if (i == 3)
-                        //        w_Temp_Storage.DeptCode = dt[i].ToString();
+                            //    if (i == 3)
+                            //        w_Temp_Storage.DeptCode = dt[i].ToString();
 
-                        //    if (i == 4)
-                        //        w_Temp_Storage.SysId = dt[i].ToString();
+                            //    if (i == 4)
+                            //        w_Temp_Storage.SysId = dt[i].ToString();
 
-                        //    w_Temp_Storage.StName = w_Temp_Storage.DocEntry;
-                        //}
-                        if (dt.Table.Columns.Contains("储位编号"))
-                            w_Temp_Storage.DocEntry = dt["储位编号"].ToString();
-                        if (dt.Table.Columns.Contains("储位名称"))
-                            w_Temp_Storage.StName = dt["储位名称"].ToString();
-                        if (dt.Table.Columns.Contains("所属仓库"))
-                            w_Temp_Storage.WhCode = dt["所属仓库"].ToString();
-                        if (dt.Table.Columns.Contains("权限部门"))
-                            w_Temp_Storage.DeptCode = dt["权限部门"].ToString();
-                        if (dt.Table.Columns.Contains("sysid"))
-                            w_Temp_Storage.SysId = dt["sysid"].ToString();
+                            //    w_Temp_Storage.StName = w_Temp_Storage.DocEntry;
+                            //}
+                            if (dt.Table.Columns.Contains("储位编号"))
+                                w_Temp_Storage.DocEntry = dt["储位编号"].ToString();
+                            if (dt.Table.Columns.Contains("储位编码"))
+                                w_Temp_Storage.DocEntry = dt["储位编码"].ToString();
+                            if (dt.Table.Columns.Contains("储位名称"))
+                                w_Temp_Storage.StName = dt["储位名称"].ToString();
+                            if (dt.Table.Columns.Contains("仓库"))
+                                w_Temp_Storage.WhCode = dt["仓库"].ToString();
+                            if (dt.Table.Columns.Contains("所属仓库"))
+                                w_Temp_Storage.WhCode = dt["所属仓库"].ToString();
+                            if (dt.Table.Columns.Contains("权限部门"))
+                                w_Temp_Storage.DeptCode = dt["权限部门"].ToString();
+                            if (dt.Table.Columns.Contains("sysid"))
+                                w_Temp_Storage.SysId = dt["sysid"].ToString();
 
-                        temp_Storages.Add(w_Temp_Storage);
+                            temp_Storages.Add(w_Temp_Storage);
+                        }
+
                     }
                     importCount = importData.ImportStorageTb(config["ApiConfig:dept"], temp_Storages);
                     Console.WriteLine("储位基础资料成功导入" + importCount.ToString() + "条记录!");
@@ -308,25 +390,152 @@ namespace WMSImportData
 
                     IEnumerable<DataRow> prjRows = from DataRow row in dataTableCollection["项目基础资料"].Rows select row;
                     List<w_temp_Project> projects = new List<w_temp_Project>();
-                    foreach (var dt in prjRows)
+                    if (prjRows.Count() > 0)
                     {
-                        w_temp_Project w_Temp_Project = new w_temp_Project();
+                        foreach (var dt in prjRows)
+                        {
+                            w_temp_Project w_Temp_Project = new w_temp_Project();
 
+                            if (dt.Table.Columns.Contains("项目编码"))
+                                w_Temp_Project.DocEntry = dt["项目编码"].ToString();
+                            if (dt.Table.Columns.Contains("项目编号"))
+                                w_Temp_Project.DocEntry = dt["项目编号"].ToString();
+                            if (dt.Table.Columns.Contains("项目名称"))
+                                w_Temp_Project.PrjName = dt["项目名称"].ToString();
+                            if (dt.Table.Columns.Contains("权限部门"))
+                                w_Temp_Project.DeptCode = dt["权限部门"].ToString();
+                            if (dt.Table.Columns.Contains("备注"))
+                                w_Temp_Project.Remark = dt["备注"].ToString();
+                            projects.Add(w_Temp_Project);
+                        }
 
-                        if (dt.Table.Columns.Contains("项目编号"))
-                            w_Temp_Project.DocEntry = dt["项目编号"].ToString();
-                        if (dt.Table.Columns.Contains("项目名称"))
-                            w_Temp_Project.PrjName = dt["项目名称"].ToString();
-                        if (dt.Table.Columns.Contains("权限部门"))
-                            w_Temp_Project.DeptCode = dt["权限部门"].ToString();
-
-                        projects.Add(w_Temp_Project);
                     }
                     importCount = importData.ImportProjectTb(config["ApiConfig:dept"], projects);
                     Console.WriteLine("项目基础资料成功导入" + importCount.ToString() + "条记录!");
 
                 }
+                if (dataTableCollection.Contains("仓库基础资料"))
+                {
+                    Console.WriteLine("开始导入仓库基础资料...");
 
+                    IEnumerable<DataRow> prjRows = from DataRow row in dataTableCollection["仓库基础资料"].Rows select row;
+                    if (prjRows.Count() > 0)
+                    {
+                        List<w_temp_Warehouse> warehouses = new List<w_temp_Warehouse>();
+
+                        foreach (var dt in prjRows)
+                        {
+                            w_temp_Warehouse w_Temp_Warehouse = new w_temp_Warehouse();
+
+                            if (dt.Table.Columns.Contains("仓库编码"))
+                                w_Temp_Warehouse.DocEntry = dt["仓库编码"].ToString();
+                            if (dt.Table.Columns.Contains("仓库编号"))
+                                w_Temp_Warehouse.DocEntry = dt["仓库编号"].ToString();
+                            if (dt.Table.Columns.Contains("仓库名称"))
+                                w_Temp_Warehouse.WhName = dt["仓库名称"].ToString();
+                            if (dt.Table.Columns.Contains("权限部门"))
+                                w_Temp_Warehouse.DeptCode = dt["权限部门"].ToString();
+
+                            warehouses.Add(w_Temp_Warehouse);
+                        }
+                        importCount = importData.ImportWarehouseTb(config["ApiConfig:dept"], warehouses);
+
+                    }
+                    Console.WriteLine("仓库基础资料成功导入" + importCount.ToString() + "条记录!");
+
+                }
+                if (dataTableCollection.Contains("物资类别基础资料"))
+                {
+                    Console.WriteLine("开始导入物资类别基础资料...");
+
+                    IEnumerable<DataRow> prjRows = from DataRow row in dataTableCollection["物资类别基础资料"].Rows select row;
+                    if (prjRows.Count() > 0)
+                    {
+                        List<w_temp_ProductType> productTypes = new List<w_temp_ProductType>();
+
+                        foreach (var dt in prjRows)
+                        {
+                            w_temp_ProductType temp_ProductType = new w_temp_ProductType();
+
+                            if (dt.Table.Columns.Contains("编码"))
+                                temp_ProductType.AccountID = dt["编码"].ToString();
+                            if (dt.Table.Columns.Contains("名称"))
+                                temp_ProductType.Name = dt["名称"].ToString();
+
+                            productTypes.Add(temp_ProductType);
+                        }
+                        importCount = importData.ImportProductType(config["ApiConfig:dept"], productTypes);
+
+                    }
+                    Console.WriteLine("物资类别基础资料成功导入" + importCount.ToString() + "条记录!");
+
+                }
+                if (dataTableCollection.Contains("入库组织基础资料"))
+                {
+                    Console.WriteLine("开始导入入库组织基础资料...");
+
+                    IEnumerable<DataRow> prjRows = from DataRow row in dataTableCollection["入库组织基础资料"].Rows select row;
+                    if (prjRows.Count() > 0)
+                    {
+                        List<w_temo_Organize> organizes = new List<w_temo_Organize>();
+
+                        foreach (var dt in prjRows)
+                        {
+                            w_temo_Organize temo_Organize = new w_temo_Organize();
+
+                            if (dt.Table.Columns.Contains("组织编号"))
+                                temo_Organize.KeyCode = dt["组织编号"].ToString();
+                            if (dt.Table.Columns.Contains("组织部门名称"))
+                                temo_Organize.DptName = dt["组织部门名称"].ToString();
+                            if (dt.Table.Columns.Contains("权限部门"))
+                                temo_Organize.DeptCode = dt["权限部门"].ToString();
+                            organizes.Add(temo_Organize);
+                        }
+                        importCount = importData.ImportOrganize(config["ApiConfig:dept"], organizes);
+
+                    }
+                    Console.WriteLine("入库组织基础资料成功导入" + importCount.ToString() + "条记录!");
+
+                }
+                if (dataTableCollection.Contains("施工单位基础资料"))
+                {
+                    Console.WriteLine("开始导入施工单位基础资料...");
+
+                    IEnumerable<DataRow> engRows = from DataRow row in dataTableCollection["施工单位基础资料"].Rows select row;
+                    if (engRows.Count() > 0)
+                    {
+                        List<w_temp_EnginCompany> enginComps = new List<w_temp_EnginCompany>();
+
+                        foreach (var dt in engRows)
+                        {
+                            w_temp_EnginCompany temo_engComp = new w_temp_EnginCompany();
+
+                            if (dt.Table.Columns.Contains("施工单位编号"))
+                                temo_engComp.DocEntry = dt["施工单位编号"].ToString();
+                            if (dt.Table.Columns.Contains("施工单位名称"))
+                                temo_engComp.EngName = dt["施工单位名称"].ToString();
+                            if (dt.Table.Columns.Contains("权限部门"))
+                                temo_engComp.DeptCode = dt["权限部门"].ToString();
+                            if (dt.Table.Columns.Contains("联系人"))
+                                temo_engComp.Connector = dt["联系人"].ToString();
+                            if (dt.Table.Columns.Contains("固定电话"))
+                                temo_engComp.Telephone = dt["固定电话"].ToString();
+                            if (dt.Table.Columns.Contains("备注"))
+                                temo_engComp.Remark = dt["备注"].ToString();
+                            if (dt.Table.Columns.Contains("移动电话"))
+                                temo_engComp.Mobile = dt["移动电话"].ToString();
+                            if (dt.Table.Columns.Contains("职位"))
+                                temo_engComp.Position = dt["职位"].ToString();
+                            if (dt.Table.Columns.Contains("部门"))
+                                temo_engComp.Department = dt["部门"].ToString();
+                            enginComps.Add(temo_engComp);
+                        }
+                        importCount = importData.ImportEnginComp(config["ApiConfig:dept"], enginComps);
+
+                    }
+                    Console.WriteLine("施工单位基础资料成功导入" + importCount.ToString() + "条记录!");
+
+                }
             }
             public static void GetTData(string path, bool isFirstRowAsColNames)
             {
@@ -347,17 +556,23 @@ namespace WMSImportData
                         for (int i = 0; i < totalColums; i++)
                         {
                             if (i == 0)
-                                w_Temp.ex1 = dr[i].ToString();
+                                w_Temp.ex1 = dr[i].ToString().Replace("'", "\'");
                             if (i == 1)
-                                w_Temp.ex2 = dr[i].ToString();
+                                w_Temp.ex2 = dr[i].ToString().Replace("'", "\'");
                             if (i == 2)
-                                w_Temp.ex3 = dr[i].ToString();
+                                w_Temp.ex3 = WmsEncryptionHelper.Encrypt(dr[i-2].ToString(), dr[i].ToString()) ;
                             if (i == 3)
-                                w_Temp.ex4 = dr[i].ToString();
+                                w_Temp.ex4 = dr[i].ToString().Replace("'", "\'");
                             if (i == 4)
-                                w_Temp.ex5 = dr[i].ToString();
+                                w_Temp.ex5 = dr[i].ToString().Replace("'", "\'");
                             if (i == 5)
-                                w_Temp.ex6 = dr[i].ToString();
+                                w_Temp.ex6 = dr[i].ToString().Replace("'", "\'");
+                            if (i == 6)
+                                w_Temp.ex7 = dr[i].ToString().Replace("'", "\'");
+                            if (i == 7)
+                                w_Temp.ex8 = dr[i].ToString().Replace("'", "\'");
+                            if (i == 8)
+                                w_Temp.ex9 = dr[i].ToString().Replace("'", "\'");
                         }
                         tempdataList.Add(w_Temp);
                        
@@ -365,12 +580,12 @@ namespace WMSImportData
                     if (j == 0)
                     {
                         datarows = importData.ImportTempSheet(config["ApiConfig:dept"], tempdataList);
-                        Console.WriteLine(dataTableCollection[j].TableName+ "成功导入temp" + datarows.ToString() + "条记录!");
+                        Console.WriteLine(dataTableCollection[j].TableName+ "成功导入temp " + datarows.ToString() + "条记录!");
                     }
                     if (j == 1)
                     {
                         datarows = importData.ImportTemp2Sheet(config["ApiConfig:dept"], tempdataList);
-                        Console.WriteLine(dataTableCollection[j].TableName + "成功导入temp2" + datarows.ToString() + "条记录!");
+                        Console.WriteLine(dataTableCollection[j].TableName + "成功导入temp2 " + datarows.ToString() + "条记录!");
                     }
 
                 }

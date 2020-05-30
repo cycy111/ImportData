@@ -12,16 +12,24 @@ using WMSImportData.Config;
 using System.Linq;
 using System.Data.SqlClient;
 using WMSImportData.Model;
+using Microsoft.Extensions.Configuration;
+using WmsReport.Infrastructure.Config;
 
 namespace WMSImportData.BLL
 {
     public class ImportData
     {
         private IWmsDbConnection _wmsDbConnection;
-     
-        public ImportData(IWmsDbConnection wmsDbConnection)
+
+        private IConfiguration _configuration;
+
+
+
+
+        public ImportData(IWmsDbConnection wmsDbConnection, IConfiguration configuration)
         {
             _wmsDbConnection = wmsDbConnection;
+            _configuration = configuration;
             
         }
         public int ImportStoTb(string dept,List<StorageinfoTemp> storageinfos)
@@ -84,7 +92,7 @@ namespace WMSImportData.BLL
                     dp.Add("@ERPNo", model.ERPNo);
                     dp.Add("@InSUserSign", model.InSUserSign);
                     dp.Add("@PackagingType", model.PackagingType);
-                    //dp.Add("@CreateDate", SqlDbType.NVarChar, 50);
+                    dp.Add("@CreateDate", model.CreateDate);
                     dp.Add("@ProductCategory", model.ProductCategory);
                     dp.Add("@FirstCate", model.FirstCate);
                     dp.Add("@SecCate", model.SecCate);
@@ -97,6 +105,14 @@ namespace WMSImportData.BLL
                     dp.Add("@WhCode", model.WhCode);
                     dp.Add("@OrderPactCode", model.OrderPactCode);
                     dp.Add("@FacPactCode", model.FacPactCode);
+                    dp.Add("@DmadUser", model.DmadUser);
+                    dp.Add("@City", model.City);
+                    dp.Add("@xlenght", model.xlenght);
+                    dp.Add("@xwidth", model.xwidth);
+                    dp.Add("@xheight", model.xheight);
+                    dp.Add("@ComboNo", model.ComboNo);
+                    dp.Add("@ComboName", model.ComboName);
+
                     //  dp.Add("@id", SqlDbType.Int,4);
 
                     importCount += conn.Execute("w_StorageInfo_temp_ADD", dp, commandType: CommandType.StoredProcedure);
@@ -131,6 +147,12 @@ namespace WMSImportData.BLL
                     dp.Add("@MappingCode", model.MappingCode);
                     dp.Add("@MappingName", model.MappingName);
                     dp.Add("@Price", model.Price);
+                    dp.Add("@MappingName", model.MappingName);
+                    dp.Add("@Price", model.Price);
+                    if(!String.IsNullOrEmpty(model.ComboNo))
+                    dp.Add("@ComboNo", model.ComboNo);
+                    if(!String.IsNullOrEmpty(model.ComboName))
+                    dp.Add("@ComboName", model.ComboName);
 
                     importCount += conn.Execute("w_temp_Material_ADD", dp, commandType: CommandType.StoredProcedure);
                 }
@@ -196,8 +218,100 @@ namespace WMSImportData.BLL
                     dp.Add("@DocEntry", model.DocEntry);
                     dp.Add("@DeptCode", model.DeptCode);
                     dp.Add("@PrjName", model.PrjName);
+                    dp.Add("@Remark", model.Remark);
 
                     importCount += conn.Execute("w_temp_Project_ADD", dp, commandType: CommandType.StoredProcedure);
+                }
+
+            }
+            return importCount;
+        }
+        public int ImportWarehouseTb(string dept, List<w_temp_Warehouse> warehouses)
+        {
+            int importCount = 0;
+            using (var conn = GetOpenConnection(_wmsDbConnection.GetDbConnStr(dept, ""), DbProvider.SqlServer))
+            {
+                string sqlStr = @"delete from w_temp_Warehouse";
+                conn.Execute(sqlStr);
+                foreach (var model in warehouses)
+                {
+                    DynamicParameters dp = new DynamicParameters();
+
+                    dp.Add("@DocEntry", model.DocEntry);
+                    dp.Add("@DeptCode", model.DeptCode);
+                    dp.Add("@WhName", model.WhName);
+
+                    importCount += conn.Execute("w_temp_Warehouse_ADD", dp, commandType: CommandType.StoredProcedure);
+                }
+
+            }
+            return importCount;
+        }
+        //物资类别
+        public int ImportProductType(string dept, List<w_temp_ProductType> productTypes)
+        {
+            int importCount = 0;
+            using (var conn = GetOpenConnection(_wmsDbConnection.GetDbConnStr(dept, ""), DbProvider.SqlServer))
+            {
+                string sqlStr = @"delete from w_temp_ProductType";
+                conn.Execute(sqlStr);
+                foreach (var model in productTypes)
+                {
+                    DynamicParameters dp = new DynamicParameters();
+
+                    dp.Add("@AccountID", model.AccountID);
+                    dp.Add("@Name", model.Name);
+
+                    importCount += conn.Execute("w_temp_ProductType_ADD", dp, commandType: CommandType.StoredProcedure);
+                }
+
+            }
+            return importCount;
+        }
+        //入库组织
+        public int ImportOrganize(string dept, List<w_temo_Organize> organizes)
+        {
+            int importCount = 0;
+            using (var conn = GetOpenConnection(_wmsDbConnection.GetDbConnStr(dept, ""), DbProvider.SqlServer))
+            {
+                string sqlStr = @"delete from w_temp_Organize";
+                conn.Execute(sqlStr);
+                foreach (var model in organizes)
+                {
+                    DynamicParameters dp = new DynamicParameters();
+
+                    dp.Add("@KeyCode", model.KeyCode);
+                    dp.Add("@DptName", model.DptName);
+                    dp.Add("@DeptCode", model.DeptCode);
+
+                    importCount += conn.Execute("w_temp_Organize_ADD", dp, commandType: CommandType.StoredProcedure);
+                }
+
+            }
+            return importCount;
+        }
+        public int ImportEnginComp(string dept ,List<w_temp_EnginCompany> w_Temp_Engins)
+        {
+            int importCount = 0;
+            using (var conn = GetOpenConnection(_wmsDbConnection.GetDbConnStr(dept, ""), DbProvider.SqlServer))
+            {
+                string sqlStr = @"delete from w_temp_EnginCompany";
+                conn.Execute(sqlStr);
+                foreach (var model in w_Temp_Engins)
+                {
+                    DynamicParameters dp = new DynamicParameters();
+
+                    dp.Add("@DocEntry", model.DocEntry);
+                    dp.Add("@Remark", model.Remark);
+                    dp.Add("@DeptCode", model.DeptCode);
+                    dp.Add("@EngName", model.EngName);
+                    dp.Add("@ProvinceCode", model.ProvinceCode);
+                    dp.Add("@Mobile", model.Mobile);
+                    dp.Add("@Department", model.Department);
+                    dp.Add("@Position", model.Position);
+                    dp.Add("@Connector", model.Connector);
+
+                    importCount += conn.Execute("w_temp_EnginCompany_ADD", dp, commandType: CommandType.StoredProcedure);
                 }
 
             }
@@ -212,11 +326,21 @@ namespace WMSImportData.BLL
                 conn.Execute(sqlStr);
                 foreach (var model in w_Temps)
                 {
-                    DynamicParameters dp = new DynamicParameters();
-                    sqlStr=string.Format("insert into w_temp(ex1,ex2,ex3,ex4) select '{0}','{1}','{2}','{3}'", model.ex1, model.ex2, model.ex3, model.ex4);
-                    importCount += conn.Execute(sqlStr);
-                    
+                    try
+                    {
+                        DynamicParameters dp = new DynamicParameters();
+                        sqlStr = string.Format(@"insert into w_temp(ex1,ex2,ex3,ex4,ex5,ex6,ex7,ex8,ex9) select '{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}'", model.ex1, model.ex2.Replace("'", "''"), model.ex3,
+                            model.ex4, model.ex5, model.ex6, model.ex7, model.ex8, model.ex9);
+                        importCount += conn.Execute(sqlStr);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("导入出错!");
+                    }
+
                 }
+
+
             }
             return importCount;
         }
@@ -230,12 +354,40 @@ namespace WMSImportData.BLL
                 foreach (var model in w_Temps)
                 {
                     DynamicParameters dp = new DynamicParameters();
-                    sqlStr = string.Format("insert into w_temp2(ex1,ex2,ex3,ex4) select '{0}','{1}','{2}','{3}'", model.ex1, model.ex2, model.ex3, model.ex4);
+                    sqlStr = string.Format("insert into w_temp2(ex1,ex2,ex3,ex4,ex5,ex6,ex7,ex8,ex9) select '{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}'", model.ex1, model.ex2.Replace("'", "''"), model.ex3,
+                        model.ex4, model.ex5, model.ex6, model.ex7, model.ex8, model.ex9);
 
                     //sqlStr = string.Format("insert into w_temp2(f1,f2,f3,f4,f5) select '{0}','{1}','{2}'", model.f1, model.f2, model.f3);
                     importCount += conn.Execute(sqlStr);
 
                 }
+            }
+            return importCount;
+        }
+
+        public int setRole(string dept, List<w_temp> w_Temps)
+        {
+            int importCount = 0;
+            string connStr = _configuration["DbConnections:Tus"]?.ToString();
+            using (var conn = GetOpenConnection(connStr, DbProvider.Oracle))
+            {
+                string sql = "select top 1 idx from users where login_name = :loginName";
+                var userId = conn.ExecuteScalar<int>(sql, new
+                {
+                    loginName = "zhangsna"
+                });
+                sql = "select top 1 idx from role where name = :roleName";
+                var roleId = conn.ExecuteScalar<int>(sql, new
+                {
+                    roleName = "审批人"
+                });
+
+                sql = "inset into user_role(role_Id,user_Id) values(:roleId,:userId)";
+                conn.Execute(sql, new[]
+                {
+                    new { roleId=3,userId=5}
+                });
+                
             }
             return importCount;
         }
