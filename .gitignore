@@ -15,3 +15,12 @@ obj/
 .vs
 applicationhost.config
 packages/
+
+
+# compiled files
+obj
+bin
+# user files
+*.user
+*.suo
+*.pdb
