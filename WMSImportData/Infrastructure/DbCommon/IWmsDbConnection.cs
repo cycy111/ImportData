@@ -7,6 +7,6 @@ namespace WmsReport.Infrastructure.DbCommon
 {
     public interface IWmsDbConnection
     {
-        string GetDbConnStr(string deptCode, string deptName);
+        string GetDbConnStr(string deptCode);
     }
 }

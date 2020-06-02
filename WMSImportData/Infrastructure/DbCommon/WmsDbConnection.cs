@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using WmsReport.Infrastructure.Config;
 using Dapper;
 using Zh.Common.DbHelper;
+using Microsoft.Extensions.Configuration;
+
 namespace WmsReport.Infrastructure.DbCommon
 {
     /// <summary>
@@ -15,14 +17,16 @@ namespace WmsReport.Infrastructure.DbCommon
     {
         //实现注入，基础数据库连接，配合控制台入口映射实现访问数据配置文件DbConnections
         private IOptions<DbConnections> _dbConnections;
-        
+        private IConfiguration _configuration;
+
         /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="dbConnsAccessor"></param>
-        public WmsDbConnection(IOptions<DbConnections> dbConnsAccessor)
+        public WmsDbConnection(IOptions<DbConnections> dbConnsAccessor,IConfiguration configuration)
         {
             _dbConnections = dbConnsAccessor;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -31,16 +35,25 @@ namespace WmsReport.Infrastructure.DbCommon
         /// <param name="deptCode"></param>
         /// <param name="deptName"></param>
         /// <returns></returns>
-        public string GetDbConnStr(string deptCode,string deptName)
+        public string GetDbConnStr(string deptCode)
         {
             string server = _dbConnections.Value.wmsDb.server;
             string uid = _dbConnections.Value.wmsDb.uid;
             string pwd = _dbConnections.Value.wmsDb.pwd;
-            string database = getDatabase(deptCode, deptName);
+            string dept = "";
+            dept = _configuration["ApiConfig:dept"]?.ToString();
+            
+            if (dept == "")
+            {
+                Console.WriteLine("请输入部门代码:");
+                dept = Console.ReadLine();
+
+            }
+            string database = getDatabase(dept);
             return $"server={server};uid= {uid};pwd={pwd};database={database};";
         }
 
-        private string getDatabase(string deptCode,string deptName)
+        private string getDatabase(string deptCode)
         {
             string result = "";
             string server = _dbConnections.Value.wmsDb.server;
