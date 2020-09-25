@@ -141,5 +141,35 @@ namespace WMSImportData.Model
             get { return _id; }
             set { _id = value; }
         }
+
+        /// <summary>
+		/// EndTm
+        /// </summary>		
+		private string _endtm;
+        public string EndTm
+        {
+            get { return _endtm; }
+            set { _endtm = value; }
+        }
+
+        /// <summary>
+		/// StartTm
+        /// </summary>		
+		private string _starttm;
+        public string StartTm
+        {
+            get { return _starttm; }
+            set { _starttm = value; }
+        }
+
+        /// <summary>
+		/// ConnectorID
+        /// </summary>		
+		private string _connectorid;
+        public string ConnectorID
+        {
+            get { return _connectorid; }
+            set { _connectorid = value; }
+        }
     }
 }

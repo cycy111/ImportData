@@ -15,6 +15,16 @@ namespace WMSImportData.Model
             get { return _cgdhms; }
             set { _cgdhms = value; }
         }
+
+        /// <summary>
+        /// 配比数
+        /// </summary>
+		private string _peibiqty;
+        public string PeiBiQty
+        {
+            get { return _peibiqty; }
+            set { _peibiqty = value; }
+        }
         /// <summary>
         /// DeptCode
         /// </summary>		

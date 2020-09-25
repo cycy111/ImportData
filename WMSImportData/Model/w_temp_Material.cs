@@ -17,6 +17,15 @@ namespace WMSImportData.Model
             set { _docentry = value; }
         }
         /// <summary>
+        /// DocEntry
+        /// </summary>		
+        private string _materialSname;
+        public string MaterialSname
+        {
+            get { return _materialSname; }
+            set { _materialSname = value; }
+        }
+        /// <summary>
         /// DeptCode
         /// </summary>		
         private string _deptcode;
@@ -169,6 +178,16 @@ namespace WMSImportData.Model
         {
             get { return _comboname; }
             set { _comboname = value; }
+        }
+
+        /// <summary>
+        /// 配比
+        /// </summary>		
+        private string _peibiqty;
+        public string PeiBiQty
+        {
+            get { return _peibiqty; }
+            set { _peibiqty = value; }
         }
     }
 }

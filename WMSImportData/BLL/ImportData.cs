@@ -15,16 +15,21 @@ using WMSImportData.Model;
 using Microsoft.Extensions.Configuration;
 using WmsReport.Infrastructure.Config;
 using System.Threading.Tasks;
+using AccountCenter.Api.Infrastructure.WmsEncryption;
+using AccountCenter.Api.Dto.Request;
+using Zh.Common.Http;
+using Zh.Common.ApiRespose;
+using Newtonsoft.Json;
 
 namespace WMSImportData.BLL
 {
     public class ImportData: IImportData
     {
-        private IWmsDbConnection _wmsDbConnection;
+        private readonly IWmsDbConnection _wmsDbConnection;
 
-        private IConfiguration _configuration;
+        private readonly IConfiguration _configuration;
 
-        private string constr ;
+        private readonly string constr ;
         public ImportData(IWmsDbConnection wmsDbConnection, IConfiguration configuration)
         {
             _wmsDbConnection = wmsDbConnection;
@@ -58,10 +63,15 @@ namespace WMSImportData.BLL
                 if (storageinforows.Count() > 0)
                 {
                     List<StorageinfoTemp> storageinfos = new List<StorageinfoTemp>();
+                    int i = 0;
                     foreach (var dt in storageinforows)
                     {
+                        //Console.WriteLine(i++);
                         StorageinfoTemp storageinfoTemp = new StorageinfoTemp();
+                        //if (i == 823)
+                        //{
 
+                        //}
                         if (dt.Table.Columns.Contains("单据类型"))
                             storageinfoTemp.OrderType = dt["单据类型"].ToString();
                         if (dt.Table.Columns.Contains("物资编号"))
@@ -163,11 +173,19 @@ namespace WMSImportData.BLL
                         if (dt.Table.Columns.Contains("单据日期"))
                             storageinfoTemp.CreateDate = dt["单据日期"].ToString();
                         if (dt.Table.Columns.Contains("长"))
-                            storageinfoTemp.xlenght = Convert.ToDecimal(dt["长"].ToString());
+                            storageinfoTemp.xlenght = Convert.ToDecimal((dt["长"]?.ToString()==""?"0": dt["长"]?.ToString()));
                         if (dt.Table.Columns.Contains("宽"))
-                            storageinfoTemp.xwidth = Convert.ToDecimal(dt["宽"].ToString());
+                            storageinfoTemp.xwidth = Convert.ToDecimal(dt["宽"]?.ToString() == "" ? "0" : dt["宽"]?.ToString());
                         if (dt.Table.Columns.Contains("高"))
-                            storageinfoTemp.xheight = Convert.ToDecimal(dt["高"].ToString());
+                            storageinfoTemp.xheight = Convert.ToDecimal(dt["高"]?.ToString() == "" ? "0" : dt["高"]?.ToString());
+                        if (dt.Table.Columns.Contains("实物管理员"))
+                            storageinfoTemp.Manager = dt["实物管理员"].ToString();
+                        if (dt.Table.Columns.Contains("配比数"))
+                            storageinfoTemp.PeiBiQty = dt["配比数"].ToString();
+                        if (dt.Table.Columns.Contains("所属账务员"))
+                            storageinfoTemp.Accountant = dt["所属账务员"].ToString();
+                        if (dt.Table.Columns.Contains("需求人电话"))
+                            storageinfoTemp.DmadPhone = dt["需求人电话"].ToString();
                         storageinfos.Add(storageinfoTemp);
                     }
                     
@@ -175,88 +193,109 @@ namespace WMSImportData.BLL
                     {
                         string sqlStr = @"delete from w_StorageInfo_temp";
                         conn.Execute(sqlStr);
-                        foreach (var model in storageinfos)
+                        while (storageinfos.Count > 0)
                         {
-                            DynamicParameters dp = new DynamicParameters();
+                            List<StorageinfoTemp> tempstorageinfos = new List<StorageinfoTemp>();
+                            List<DynamicParameters> dynamicParameters = new List<DynamicParameters>();
+                            if (storageinfos.Count > 200)
+                            {
+                                tempstorageinfos = storageinfos.Take(200).ToList();
+                                
+                                storageinfos.RemoveRange(0, 200);
+                            }
+                            else
+                            {
+                                tempstorageinfos = storageinfos.Take(storageinfos.Count).ToList();
+                                storageinfos.RemoveRange(0, storageinfos.Count);
+                            }
+                            try
+                            {
+                                foreach (var model in tempstorageinfos)
+                                {
+                                    DynamicParameters dp = new DynamicParameters();
 
-                            dp.Add("@CGDHMS", model.CGDHMS);
-                            dp.Add("@DeptCode", model.DeptCode);
-                            dp.Add("@DmadDept", model.DmadDept);
-                            dp.Add("@DmadKS", model.DmadKS);
-                            dp.Add("@DmadPhone", model.DmadPhone);
-                            dp.Add("@DmadUser", model.DmadUser);
-                            dp.Add("@EnComCode", model.EnComCode);
-                            dp.Add("@EnComName", model.EnComName);
-                            dp.Add("@InOrganize", model.InOrganize);
-                            dp.Add("@PackingCode", model.PackingCode);
-                            dp.Add("@PactCode", model.PactCode);
-                            dp.Add("@PactName", model.PactName);
-                            dp.Add("@ProjectCode", model.ProjectCode);
-                            dp.Add("@ProjectName", model.ProjectName);
-                            dp.Add("@ProjectStatus", model.ProjectStatus);
-                            dp.Add("@ProjectUser", model.ProjectUser);
-                            dp.Add("@ProSeqno", model.ProSeqno);
-                            dp.Add("@PurchaseCode", model.PurchaseCode);
-                            dp.Add("@Supplier", model.Supplier);
-                            dp.Add("@SupName", model.SupName);
-                            dp.Add("@UseDept", model.UseDept);
-                            dp.Add("@UseKS", model.UseKS);
-                            dp.Add("@UsePhone", model.UsePhone);
-                            dp.Add("@UseUser", model.UseUser);
-                            dp.Add("@DocEntry", model.DocEntry);
-                            dp.Add("@ProductCode", model.ProductCode);
-                            dp.Add("@ProductName", model.ProductName);
-                            dp.Add("@ProductType", model.ProductType);
-                            dp.Add("@ProductUnit", model.ProductUnit);
-                            dp.Add("@OrderType", model.OrderType);
-                            dp.Add("@StandV", model.StandV);
-                            dp.Add("@StandW", model.StandW);
-                            dp.Add("@Price", model.Price);
-                            dp.Add("@Acount", model.Acount);
-                            dp.Add("@PackCode", model.PackCode);
-                            dp.Add("@InSDate", model.InSDate);
-                            dp.Add("@ZSDate", model.ZSDate);
-                            dp.Add("@ProProperty", model.ProProperty);
-                            dp.Add("@Accountant", model.Accountant);
-                            dp.Add("@Manager", model.Manager);
-                            dp.Add("@Remark1", model.Remark1);
-                            dp.Add("@Remark2", model.Remark2);
-                            dp.Add("@Taizhang", model.Taizhang);
-                            dp.Add("@CGDID", model.CGDID);
-                            dp.Add("@MISOrderID", model.MISOrderID);
-                            dp.Add("@SpcModel", model.SpcModel);
-                            dp.Add("@ERPNo", model.ERPNo);
-                            dp.Add("@InSUserSign", model.InSUserSign);
-                            dp.Add("@PackagingType", model.PackagingType);
-                            dp.Add("@CreateDate", model.CreateDate);
-                            dp.Add("@ProductCategory", model.ProductCategory);
-                            dp.Add("@FirstCate", model.FirstCate);
-                            dp.Add("@SecCate", model.SecCate);
-                            dp.Add("@Location", model.Location);
-                            dp.Add("@PackQty", model.PackQty);
-                            dp.Add("@Qty", model.Qty);
-                            //dp.Add("@LineNum", SqlDbType.Int, 4);
-                            //dp.Add("@ProductCoe", SqlDbType.NVarChar, 100);
-                            //dp.Add("@StoStatus", SqlDbType.NVarChar, 50);
-                            dp.Add("@WhCode", model.WhCode);
-                            dp.Add("@OrderPactCode", model.OrderPactCode);
-                            dp.Add("@FacPactCode", model.FacPactCode);
-                            dp.Add("@DmadUser", model.DmadUser);
-                            dp.Add("@City", model.City);
-                            dp.Add("@xlenght", model.xlenght);
-                            dp.Add("@xwidth", model.xwidth);
-                            dp.Add("@xheight", model.xheight);
-                            dp.Add("@ComboNo", model.ComboNo);
-                            dp.Add("@ComboName", model.ComboName);
+                                    dp.Add("@CGDHMS", model.CGDHMS);
+                                    dp.Add("@DeptCode", model.DeptCode);
+                                    dp.Add("@DmadDept", model.DmadDept);
+                                    dp.Add("@DmadKS", model.DmadKS);
+                                    dp.Add("@DmadPhone", model.DmadPhone);
+                                    dp.Add("@DmadUser", model.DmadUser);
+                                    dp.Add("@EnComCode", model.EnComCode);
+                                    dp.Add("@EnComName", model.EnComName);
+                                    dp.Add("@InOrganize", model.InOrganize);
+                                    dp.Add("@PackingCode", model.PackingCode);
+                                    dp.Add("@PactCode", model.PactCode);
+                                    dp.Add("@PactName", model.PactName);
+                                    dp.Add("@ProjectCode", model.ProjectCode);
+                                    dp.Add("@ProjectName", model.ProjectName);
+                                    dp.Add("@ProjectStatus", model.ProjectStatus);
+                                    dp.Add("@ProjectUser", model.ProjectUser);
+                                    dp.Add("@ProSeqno", model.ProSeqno);
+                                    dp.Add("@PurchaseCode", model.PurchaseCode);
+                                    dp.Add("@Supplier", model.Supplier);
+                                    dp.Add("@SupName", model.SupName);
+                                    dp.Add("@UseDept", model.UseDept);
+                                    dp.Add("@UseKS", model.UseKS);
+                                    dp.Add("@UsePhone", model.UsePhone);
+                                    dp.Add("@UseUser", model.UseUser);
+                                    dp.Add("@DocEntry", model.DocEntry);
+                                    dp.Add("@ProductCode", model.ProductCode);
+                                    dp.Add("@ProductName", model.ProductName);
+                                    dp.Add("@ProductType", model.ProductType);
+                                    dp.Add("@ProductUnit", model.ProductUnit);
+                                    dp.Add("@OrderType", model.OrderType);
+                                    dp.Add("@StandV", model.StandV);
+                                    dp.Add("@StandW", model.StandW);
+                                    dp.Add("@Price", model.Price);
+                                    dp.Add("@Acount", model.Acount);
+                                    dp.Add("@PackCode", model.PackCode);
+                                    dp.Add("@InSDate", model.InSDate);
+                                    dp.Add("@ZSDate", model.ZSDate);
+                                    dp.Add("@ProProperty", model.ProProperty);
+                                    dp.Add("@Accountant", model.Accountant);
+                                    dp.Add("@Manager", model.Manager);
+                                    dp.Add("@Remark1", model.Remark1);
+                                    dp.Add("@Remark2", model.Remark2);
+                                    dp.Add("@Taizhang", model.Taizhang);
+                                    dp.Add("@CGDID", model.CGDID);
+                                    dp.Add("@MISOrderID", model.MISOrderID);
+                                    dp.Add("@SpcModel", model.SpcModel);
+                                    dp.Add("@ERPNo", model.ERPNo);
+                                    dp.Add("@InSUserSign", model.InSUserSign);
+                                    dp.Add("@PackagingType", model.PackagingType);
+                                    dp.Add("@CreateDate", model.CreateDate);
+                                    dp.Add("@ProductCategory", model.ProductCategory);
+                                    dp.Add("@FirstCate", model.FirstCate);
+                                    dp.Add("@SecCate", model.SecCate);
+                                    dp.Add("@Location", model.Location);
+                                    dp.Add("@PackQty", model.PackQty);
+                                    dp.Add("@Qty", model.Qty);
+                                    dp.Add("@WhCode", model.WhCode);
+                                    dp.Add("@OrderPactCode", model.OrderPactCode);
+                                    dp.Add("@FacPactCode", model.FacPactCode);
+                                    dp.Add("@DmadUser", model.DmadUser);
+                                    dp.Add("@City", model.City);
+                                    dp.Add("@xlenght", model.xlenght);
+                                    dp.Add("@xwidth", model.xwidth);
+                                    dp.Add("@xheight", model.xheight);
+                                    dp.Add("@ComboNo", model.ComboNo);
+                                    dp.Add("@ComboName", model.ComboName);
 
-                            //  dp.Add("@id", SqlDbType.Int,4);
+                                    dynamicParameters.Add(dp);
+                                }
+                                 
+                                importCount += await conn.ExecuteAsync("w_StorageInfo_temp_ADD", dynamicParameters, commandType: CommandType.StoredProcedure);
 
-                            importCount += await conn.ExecuteAsync("w_StorageInfo_temp_ADD", dp, commandType: CommandType.StoredProcedure);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine("导入出错!"+ex.Message);
+                            }
                         }
-
 
                     }
                     Console.WriteLine("库存成功导入" + importCount.ToString() + "条记录!");
+                    importCount = 0;
                 }
 
 
@@ -298,8 +337,18 @@ namespace WMSImportData.BLL
                             storageinfoTemp.ComboNo = dt["套料编码"].ToString();
                         if (dt.Table.Columns.Contains("套料名称"))
                             storageinfoTemp.ComboName = dt["套料名称"].ToString();
+                        if (dt.Table.Columns.Contains("映射编码"))
+                            storageinfoTemp.MappingCode = dt["映射编码"].ToString();
+                        if (dt.Table.Columns.Contains("映射名称"))
+                            storageinfoTemp.MappingName = dt["映射名称"].ToString();
                         if (dt.Table.Columns.Contains("权限部门"))
                             storageinfoTemp.DeptCode = dt["权限部门"].ToString();
+                        if (dt.Table.Columns.Contains("产品"))
+                            storageinfoTemp.MaterialSname = dt["产品"].ToString();
+                        if (dt.Table.Columns.Contains("规格"))
+                            storageinfoTemp.SpcModel = dt["规格"].ToString();
+                        if (dt.Table.Columns.Contains("配比数"))
+                            storageinfoTemp.PeiBiQty = dt["配比数"].ToString();
                         materials.Add(storageinfoTemp);
                     }
                     using (var conn = GetOpenConnection(constr, DbProvider.SqlServer))
@@ -326,10 +375,14 @@ namespace WMSImportData.BLL
                             dp.Add("@Price", model.Price);
                             dp.Add("@MappingName", model.MappingName);
                             dp.Add("@Price", model.Price);
+                            if(!String.IsNullOrEmpty(model.MaterialSname))
+                                dp.Add("@MaterialSname", model.MaterialSname);
                             if (!String.IsNullOrEmpty(model.ComboNo))
                                 dp.Add("@ComboNo", model.ComboNo);
                             if (!String.IsNullOrEmpty(model.ComboName))
                                 dp.Add("@ComboName", model.ComboName);
+                            if (!String.IsNullOrEmpty(model.PeiBiQty))
+                                dp.Add("@PeiBiQty", model.PeiBiQty);
 
                             importCount += await conn.ExecuteAsync("w_temp_Material_ADD", dp, commandType: CommandType.StoredProcedure);
                         }
@@ -338,7 +391,7 @@ namespace WMSImportData.BLL
 
 
                     Console.WriteLine("物资基础资料成功导入" + importCount.ToString() + "条记录!");
-
+                    importCount = 0;
                 } 
             }
             if (dataTableCollection.Contains("供应商基础资料"))
@@ -413,7 +466,8 @@ namespace WMSImportData.BLL
                             w_Temp_Storage.DeptCode = dt["权限部门"].ToString();
                         if (dt.Table.Columns.Contains("sysid"))
                             w_Temp_Storage.SysId = dt["sysid"].ToString();
-
+                        if (dt.Table.Columns.Contains("备注"))
+                            w_Temp_Storage.Remark = dt["备注"].ToString();
                         temp_Storages.Add(w_Temp_Storage);
                     }
                     using (var conn = GetOpenConnection(constr, DbProvider.SqlServer))
@@ -429,6 +483,7 @@ namespace WMSImportData.BLL
                             dp.Add("@StName", model.StName);
                             dp.Add("@SysId", model.SysId);
                             dp.Add("@WhCode", model.WhCode);
+                            dp.Add("@Remark", model.Remark);
 
                             importCount += await conn.ExecuteAsync("w_temp_Storage_ADD", dp, commandType: CommandType.StoredProcedure);
                         }
@@ -438,6 +493,7 @@ namespace WMSImportData.BLL
                 }
                     
                 Console.WriteLine("储位基础资料成功导入" + importCount.ToString() + "条记录!");
+                importCount = 0;
 
             }
             if (dataTableCollection.Contains("项目基础资料"))
@@ -483,6 +539,7 @@ namespace WMSImportData.BLL
                     }
 
                     Console.WriteLine("项目基础资料成功导入" + importCount.ToString() + "条记录!");
+                    importCount = 0;
 
                 }
             }
@@ -529,6 +586,7 @@ namespace WMSImportData.BLL
 
                 }
                 Console.WriteLine("仓库基础资料成功导入" + importCount.ToString() + "条记录!");
+                importCount = 0;
 
             }
             if (dataTableCollection.Contains("物资类别基础资料"))
@@ -569,6 +627,7 @@ namespace WMSImportData.BLL
 
                 }
                 Console.WriteLine("物资类别基础资料成功导入" + importCount.ToString() + "条记录!");
+                importCount = 0;
 
             }
             if (dataTableCollection.Contains("入库组织基础资料"))
@@ -611,6 +670,7 @@ namespace WMSImportData.BLL
 
                 }
                 Console.WriteLine("入库组织基础资料成功导入" + importCount.ToString() + "条记录!");
+                importCount = 0;
 
             }
             if (dataTableCollection.Contains("施工单位基础资料"))
@@ -644,6 +704,12 @@ namespace WMSImportData.BLL
                             temo_engComp.Position = dt["职位"].ToString();
                         if (dt.Table.Columns.Contains("部门"))
                             temo_engComp.Department = dt["部门"].ToString();
+                        if (dt.Table.Columns.Contains("授权起始日期"))
+                            temo_engComp.StartTm = dt["授权起始日期"].ToString();
+                        if (dt.Table.Columns.Contains("授权结束日期"))
+                            temo_engComp.EndTm = dt["授权结束日期"].ToString();
+                        if (dt.Table.Columns.Contains("提货人身份证号"))
+                            temo_engComp.ConnectorID = dt["提货人身份证号"].ToString();
                         enginComps.Add(temo_engComp);
                     }
                     using (var conn = GetOpenConnection(constr, DbProvider.SqlServer))
@@ -663,6 +729,9 @@ namespace WMSImportData.BLL
                             dp.Add("@Department", model.Department);
                             dp.Add("@Position", model.Position);
                             dp.Add("@Connector", model.Connector);
+                            dp.Add("@StartTm", model.StartTm);
+                            dp.Add("@EndTm", model.EndTm);
+                            dp.Add("@ConnectorID", model.ConnectorID);
 
                             importCount += conn.Execute("w_temp_EnginCompany_ADD", dp, commandType: CommandType.StoredProcedure);
                         }
@@ -670,6 +739,7 @@ namespace WMSImportData.BLL
                     }
                 }
                 Console.WriteLine("施工单位基础资料成功导入" + importCount.ToString() + "条记录!");
+                importCount = 0;
 
             }
         }
@@ -705,7 +775,12 @@ namespace WMSImportData.BLL
                         if (i == 5)
                             w_Temp.ex6 = dr[i].ToString();
                         if (i == 6)
-                            w_Temp.ex7 = dr[i].ToString();
+                        {
+                            
+                            string password = WmsEncryptionHelper.Encrypt(dr[0].ToString(), Zh.Common.Cryptography.Md5Helper.Get32MD5One(dr[i].ToString()).ToLower());
+                            w_Temp.ex7 = password;
+
+                        }
                         if (i == 7)
                             w_Temp.ex8 = dr[i].ToString();
                         if (i == 8)
@@ -714,31 +789,44 @@ namespace WMSImportData.BLL
                     tempdataList.Add(w_Temp);
 
                 }
+               
                 if (j == 0)
                 {
                     using (var conn = GetOpenConnection(constr, DbProvider.SqlServer))
                     {
                         string sqlStr = @"delete from w_temp";
                         conn.Execute(sqlStr);
-                        foreach (var model in tempdataList)
+                        
+                        while (tempdataList.Count > 0)
                         {
+                            Array aryPara;
+                            if (tempdataList.Count > 200)
+                            {
+                                aryPara = tempdataList.Take(200).ToArray();
+                                tempdataList.RemoveRange(0, 200);
+                            }
+                            else
+                            {
+                                aryPara = tempdataList.Take(tempdataList.Count).ToArray();
+                                tempdataList.RemoveRange(0, tempdataList.Count);
+                            }
                             try
                             {
-                                DynamicParameters dp = new DynamicParameters();
-                                sqlStr = string.Format(@"insert into w_temp(ex1,ex2,ex3,ex4,ex5,ex6,ex7,ex8,ex9) select '{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}'", model.ex1, model.ex2.Replace("'", "''"), model.ex3,
-                                    model.ex4, model.ex5, model.ex6, model.ex7, model.ex8, model.ex9);
-                                importCount += await conn.ExecuteAsync(sqlStr);
+                                sqlStr = string.Format(@"insert into w_temp(ex1,ex2,ex3,ex4,ex5,ex6,ex7,ex8,ex9)
+                                    values(@ex1,@ex2,@ex3,@ex4,@ex5,@ex6,@ex7,@ex8,@ex9)
+                                   ");
+                                importCount += await conn.ExecuteAsync(sqlStr, aryPara);
                             }
                             catch (Exception ex)
-                            {
-                                Console.WriteLine("导入出错!");
+                             {
+                                Console.WriteLine("导入出错!"+ex.Message);
                             }
-
                         }
 
                     }
                    
                     Console.WriteLine(dataTableCollection[j].TableName + "成功导入temp " + importCount.ToString() + "条记录!");
+                    importCount = 0;
                 }
                 if (j == 1)
                 {
@@ -748,12 +836,24 @@ namespace WMSImportData.BLL
                         conn.Execute(sqlStr);
                         foreach (var model in tempdataList)
                         {
+                            //获取表的ID
+                            string url = _configuration["Api:GetIdSequence"].ToString() + "tms_user_system/users";
+                            string result2 = HttpHelper.HttpGet(url, timeout: 15);
+                            ResponseModel<string> res2 = JsonConvert.DeserializeObject<ResponseModel<string>>(result2);
+                            string userId = res2.data;
                             DynamicParameters dp = new DynamicParameters();
                             sqlStr = string.Format("insert into w_temp2(ex1,ex2,ex3,ex4,ex5,ex6,ex7,ex8,ex9) select '{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}'", model.ex1, model.ex2.Replace("'", "''"), model.ex3,
-                                model.ex4, model.ex5, model.ex6, model.ex7, model.ex8, model.ex9);
+                                model.ex4, model.ex5, model.ex6, userId, model.ex8, model.ex9);
 
                             //sqlStr = string.Format("insert into w_temp2(f1,f2,f3,f4,f5) select '{0}','{1}','{2}'", model.f1, model.f2, model.f3);
                             importCount += conn.Execute(sqlStr);
+                           
+                            //CreateUserByLoginNameDto createUserByLoginName = new CreateUserByLoginNameDto();
+                            //createUserByLoginName.loginName = model.ex1;
+                            //createUserByLoginName.realName = model.ex2;
+                            //createUserByLoginName.mobile = model.ex3;
+                            //createUserByLoginName.pwd = model.ex7;
+
 
                         }
                     }
@@ -766,7 +866,7 @@ namespace WMSImportData.BLL
         }
 
 
-        public int setRole(List<w_temp> w_Temps)
+        public int SetRole()
         {
             int importCount = 0;
             string connStr = _configuration["DbConnections:Tus"]?.ToString();

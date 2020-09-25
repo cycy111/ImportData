@@ -55,10 +55,12 @@ namespace ZH.DIContract.Security
 					stringBuilder.Append(array[i].ToString("x2"));
 				}
 				result = stringBuilder.ToString();
-			}
-			catch (Exception ex)
+                md.Dispose();
+
+            }
+            catch (Exception ex)
 			{
-				result = string.Empty;
+				result = string.Empty+ex.Message;
 			}
 			return result;
 		}
